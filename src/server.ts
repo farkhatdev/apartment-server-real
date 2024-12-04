@@ -1,5 +1,6 @@
 import express, { Application, NextFunction, Request, Response } from "express";
 const app: Application = express();
+import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config({
   path: "./src/.env",
@@ -8,6 +9,7 @@ dotenv.config({
 const PORT: number = 8080;
 
 app.use(express.json());
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 // import routes
 import loginRoute from "./routes/auth/loginRoute";

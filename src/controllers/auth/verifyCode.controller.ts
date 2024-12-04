@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import TempUsers from "../../models/tempUser.model";
 import Users from "../../models/user.model";
-import jwt from "jsonwebtoken";
 import { generateJwt } from "../../helpers/generateJwt";
 
 interface RegisterUserBody {
@@ -17,9 +16,10 @@ const verifyCode = async (
     let { phoneNumber, otpCode } = req?.body;
 
     if (!phoneNumber)
-      return res.status(400).json({ message: "Phonenumber is required" });
+      return res.status(400).json({ message: "Phone number is required" });
 
-    if (!otpCode) return res.status(400).json({ message: "OTP is required" });
+    if (!otpCode)
+      return res.status(400).json({ message: "Verify code is required" });
 
     const currentUser = await TempUsers.findOne({ phoneNumber });
 
@@ -30,6 +30,15 @@ const verifyCode = async (
 
     if (Number(otpCode) !== currentUser?.otp?.verifyOtp)
       return res.status(400).json({ status: "failed", message: "OTP xato" });
+
+    const now = Date.now();
+
+    if (now >= currentUser?.otp?.expiresIn) {
+      await TempUsers.deleteMany({ phoneNumber });
+      return res
+        .status(400)
+        .json({ status: "failed", message: "OTP code expired" });
+    }
 
     const { id, name, password } = currentUser;
 
@@ -45,6 +54,7 @@ const verifyCode = async (
     await TempUsers.deleteMany({ phoneNumber });
     return res.status(200).json({
       type: "success",
+      message: "Successful registred",
       data: {
         id: newUser.id,
         phoneNumber: currentUser.phoneNumber,

@@ -1,83 +1,34 @@
 import { Request, Response } from "express";
 import Users from "../../models/user.model";
 import TempUsers from "../../models/tempUser.model";
+import bcrypt from "bcrypt";
 import { createOtp } from "../../helpers/sendOtp";
 
-interface RegisterUserBody {
-  name: string;
-  phoneNumber: string;
-  password: string;
-  confirmPassword: string;
-}
-
-const registerUser = async (
-  req: Request<{}, {}, RegisterUserBody>,
-  res: Response
-) => {
+const registerUser = async (req: Request, res: Response) => {
   try {
-    let { name, phoneNumber, password, confirmPassword } = req.body;
-
-    for (let [key, value] of Object.entries(req.body)) {
-      if (value === "") {
-        const capitalizedKey = key.charAt(0).toUpperCase() + key.slice(1);
-
-        return res
-          .status(400)
-          .json({ type: "failed", message: `${capitalizedKey} is required` });
-      }
-    }
-
-    // Regex
-    const nameRegex = /^[a-zA-Zа-яА-ЯёЁ\s]+$/;
-    const phoneNumberRegex = /^[0-9]{12}$/;
-    const letterAndNumberRegex = /^[A-Za-z0-9]+$/;
-    const minLengthRegex = /^.{8,}$/;
-
-    // if conditions
-    if (!nameRegex.test(name))
-      return res.status(400).json({
-        message: "Atinizda tek latin ham kiril harifleri boliwi kerek",
-      });
-
-    if (phoneNumber.startsWith("+"))
-      phoneNumber = phoneNumber.slice(1).toLocaleLowerCase();
-
-    if (!phoneNumberRegex.test(phoneNumber.toString()))
-      return res
-        .status(400)
-        .json({ type: "failed", message: "Phone number is wrong" });
-
-    if (!letterAndNumberRegex.test(password))
-      return res.status(400).json({
-        message: "Parol faqat latin harf va raqamlardan iborat bo'lishi kerak",
-      });
-
-    if (!minLengthRegex.test(password))
-      return res.status(400).json({
-        message: "Parol kamida 8 ta belgidan iborat bo'lishi kerak",
-      });
-
-    if (password !== confirmPassword)
-      return res.status(400).json({ message: "Passwords aren't the same" });
+    let { name, phoneNumber, password } = req.body;
 
     const userId = Date.now();
 
-    const isExist = await Users.findOne({ phoneNumber });
+    const [isExist] = await Promise.all([
+      Users.findOne({ phoneNumber }),
+      TempUsers.deleteMany({ phoneNumber }),
+    ]);
 
     if (isExist)
       return res
         .status(400)
         .json({ type: "failed", message: "Phone number already exist" });
 
-    await TempUsers.deleteMany({ phoneNumber });
-
     const OTP = createOtp();
+    
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await TempUsers.create({
+    await TempUsers.create({
       id: userId,
       name: name.toLowerCase(),
       phoneNumber,
-      password,
+      password: hashedPassword,
       otp: {
         verifyOtp: OTP,
         expiresIn: Date.now() + 120000,
@@ -90,6 +41,8 @@ const registerUser = async (
       data: { phoneNumber, name },
     });
   } catch (error: any) {
+    console.log(error);
+
     if (error.name === "ValidationError") {
       for (const field in error.errors) {
         return res
