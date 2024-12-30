@@ -21,7 +21,7 @@ const registerUser = async (req: Request, res: Response) => {
         .json({ type: "failed", message: "Phone number already exist" });
 
     const OTP = createOtp();
-    
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await TempUsers.create({
@@ -35,24 +35,33 @@ const registerUser = async (req: Request, res: Response) => {
       },
     });
 
-    return res.status(200).json({
-      type: "success",
-      message: "Verify your phone number",
-      data: { phoneNumber, name },
-    });
-  } catch (error: any) {
-    console.log(error);
+    console.log(OTP);
+    console.log(phoneNumber);
+    
+    
 
+    setTimeout(() => {
+      return res.status(200).json({
+        type: "success",
+        message: "Verify your phone number",
+        data: { phoneNumber, name },
+      });
+    }, 2000);
+  } catch (error: any) {
     if (error.name === "ValidationError") {
       for (const field in error.errors) {
-        return res
-          .status(400)
-          .json({ type: "failed", message: error.errors[field].message });
+        setTimeout(() => {
+          return res
+            .status(400)
+            .json({ type: "failed", message: error.errors[field].message });
+        }, 2000);
       }
     } else
-      return res
-        .status(400)
-        .json({ type: "failed", message: "Something went wrong" });
+      setTimeout(() => {
+        return res
+          .status(400)
+          .json({ type: "failed", message: "Something went wrong" });
+      }, 2000);
   }
 };
 

@@ -1,3 +1,3 @@
 export function createOtp(): number {
-  return 10000 + Math.floor(Math.random() * 90000);
+  return 100000 + Math.floor(Math.random() * 900000);
 }

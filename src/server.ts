@@ -2,9 +2,7 @@ import express, { Application, NextFunction, Request, Response } from "express";
 const app: Application = express();
 import cors from "cors";
 import dotenv from "dotenv";
-dotenv.config({
-  path: "./src/.env",
-});
+dotenv.config();
 
 const PORT: number = 8080;
 

@@ -21,6 +21,14 @@ const verifyCode = async (
     if (!otpCode)
       return res.status(400).json({ message: "Verify code is required" });
 
+    if (phoneNumber.startsWith("+")) {
+      req.body.phoneNumber = phoneNumber = phoneNumber.slice(1);
+    }
+
+    if (!phoneNumber.startsWith("998") && phoneNumber.length == 9) {
+      phoneNumber = req.body.phoneNumber = "998" + phoneNumber;
+    }
+
     const currentUser = await TempUsers.findOne({ phoneNumber });
 
     if (!currentUser)
